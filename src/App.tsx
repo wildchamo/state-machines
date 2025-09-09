@@ -26,6 +26,9 @@ const feedbackMachine = setup({}).createMachine({
           target: "prompt",
         },
         submit: {
+          guard: ({ context }) => {
+            return context.feedback.trim().length > 0;
+          },
           target: "thanks",
         },
         "feedback.update": {
