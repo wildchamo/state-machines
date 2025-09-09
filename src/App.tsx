@@ -67,6 +67,7 @@ const feedbackMachine = setup({
   on: {
     close: {
       target: ".closed",
+      actions: { type: "reset" },
     },
   },
 });
@@ -82,6 +83,8 @@ function App() {
         return <FormState send={send} state={state} />;
       case "thanks":
         return <ThanksState />;
+      case "closed":
+        return <ClosedState send={send} state={state} />;
 
       default:
         return null;
@@ -91,6 +94,7 @@ function App() {
   return (
     <>
       <h2>State: {state.value + ""}</h2>
+      <button onClick={() => send({ type: "close" })}>Close</button>
       {renderComponent()}
       <p>{JSON.stringify(state, null, 2)}</p>
     </>
@@ -156,4 +160,12 @@ function FormState({ send, state }: { send: any; state: any }) {
   );
 }
 
+function ClosedState({ send, state }: { send: any; state: any }) {
+  return (
+    <section>
+      <h2>Feedback closed</h2>
+      <button onClick={() => send({ type: "restart" })}>Restart</button>
+    </section>
+  );
+}
 export default App;
