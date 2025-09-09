@@ -3,7 +3,20 @@ import "./App.css";
 
 import { assign, setup } from "xstate";
 
-const feedbackMachine = setup({}).createMachine({
+const context = {
+  feedback: "",
+};
+const feedbackMachine = setup({
+  guards: {
+    feedbackValid: ({ context }) => {
+      return context.feedback.trim().length > 0;
+    },
+  },
+
+  actions: {
+    reset: assign(context),
+  },
+}).createMachine({
   /** @xstate-layout N4IgpgJg5mDOIC5QAoC2BDAxgCwJYDswBKAYkwBsB7WMAbQAYBdRUAB2twBddL8WQAHogAsAJgA0IAJ6IAHAE4AdLIDsAVgC+GyWix5CRRawBOlVK04kAZmEgAjLAGtFUSpQgNmSEO1hcefN5CCMIqSvL0AGyiapIyCKIAjPSKAMzpGZkZwlo6GDgExEam5pY29k6KDh5M-L7+vPzBoeFRMXGIiamiuSC6BQaKVpTGqCQOmI6edRzcjUGIamqpivJJqrHScomKmtp9+fpFw6MksACudqhc0971c4GgwSrCKfTyqeodCAq7slkAnL7fpHQwUaiQEjGOCcdDGTi3NizAJNRCiYSRRTJD5fLY-JQbLT7fDuOD8EGFIgzPwPVEIAC0kW+jN6FMGJjMFmpDUegkQqTUskUokiamim3iETS6lZh0pQxGqG5tIWCFFomF9FSiXaeKl9H+AMyQLyenlnGw6Hwjngd2R8yecjUGvksmEnwliHkKjSRqyJoOZsG4JoEGVKNViXdylEsh1noQUo9RI0QA */
   context: {
     feedback: "",
@@ -26,9 +39,7 @@ const feedbackMachine = setup({}).createMachine({
           target: "prompt",
         },
         submit: {
-          guard: ({ context }) => {
-            return context.feedback.trim().length > 0;
-          },
+          guard: { type: "feedbackValid" },
           target: "thanks",
         },
         "feedback.update": {
@@ -38,6 +49,9 @@ const feedbackMachine = setup({}).createMachine({
               feedback: event.context.feedback,
             };
           }),
+        },
+        "feedback.reset": {
+          actions: { type: "reset" },
         },
       },
     },
@@ -65,7 +79,7 @@ function App() {
       case "prompt":
         return <PromtState send={send} />;
       case "form":
-        return <FormState send={send} />;
+        return <FormState send={send} state={state} />;
       case "thanks":
         return <ThanksState />;
 
@@ -108,7 +122,7 @@ function ThanksState() {
     </section>
   );
 }
-function FormState({ send }: { send: any }) {
+function FormState({ send, state }: { send: any; state: any }) {
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     send({
@@ -116,13 +130,17 @@ function FormState({ send }: { send: any }) {
       context: { feedback: event.currentTarget.feedback.value },
     });
   }
+
+  const canSubmit = state.can({ type: "submit" });
   return (
     <section>
       <h2>What can we do better?</h2>
+      <button onClick={() => send({ type: "feedback.reset" })}>Clear</button>
       <form onSubmit={handleSubmit}>
         <textarea
           name="feedback"
           rows={4}
+          value={state.context.feedback}
           onChange={(event) =>
             send({
               type: "feedback.update",
@@ -130,7 +148,9 @@ function FormState({ send }: { send: any }) {
             })
           }
         />
-        <button type="submit">Submit</button>
+        <button type="submit" disabled={!canSubmit}>
+          Submit
+        </button>
       </form>
     </section>
   );
